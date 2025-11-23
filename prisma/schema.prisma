@@ -1,0 +1,262 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  }
+
+  datasource db {
+    provider = "postgresql"
+      url      = env("DATABASE_URL")
+      }
+
+      enum Role {
+        CUSTOMER
+          TECHNICIAN
+            ADMIN
+            }
+
+            enum OrderStatus {
+              PENDING
+                PROCESSING
+                  SHIPPED
+                    DELIVERED
+                      CANCELLED
+                      }
+
+                      enum PaymentMethod {
+                        COD
+                          ONLINE
+                          }
+
+                          enum PaymentStatus {
+                            PENDING
+                              PAID
+                                FAILED
+                                }
+
+                                enum ServiceRequestStatus {
+                                  PENDING
+                                    ACCEPTED
+                                      IN_PROGRESS
+                                        COMPLETED
+                                          CANCELLED
+                                          }
+
+                                          model User {
+                                            id        String   @id @default(cuid())
+                                              email     String   @unique
+                                                password  String
+                                                  role      Role     @default(CUSTOMER)
+                                                    createdAt DateTime @default(now())
+                                                      updatedAt DateTime @updatedAt
+
+                                                        customer   Customer?
+                                                          technician Technician?
+
+                                                            @@map("users")
+                                                            }
+
+                                                            model Customer {
+                                                              id         String  @id @default(cuid())
+                                                                userId     String  @unique
+                                                                  firstName  String
+                                                                    lastName   String
+                                                                      phone      String?
+                                                                        address    String?
+                                                                          city       String?
+                                                                            postalCode String?
+
+                                                                              user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+                                                                                orders         Order[]
+                                                                                  serviceRequests ServiceRequest[]
+                                                                                    reviews        Review[]
+
+                                                                                      @@map("customers")
+                                                                                      }
+
+                                                                                      model Technician {
+                                                                                        id             String  @id @default(cuid())
+                                                                                          userId         String  @unique
+                                                                                            firstName      String
+                                                                                              lastName       String
+                                                                                                phone          String
+                                                                                                  city           String
+                                                                                                    experienceYears Int?
+                                                                                                      bio            String?
+                                                                                                        profileImageUrl String?
+                                                                                                          approved       Boolean @default(false)
+                                                                                                            rating         Decimal @default(0) @db.Decimal(3, 2)
+                                                                                                              totalReviews   Int     @default(0)
+                                                                                                              
+                                                                                                                user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+                                                                                                                  technicianOrders TechnicianOrder[]
+                                                                                                                    earnings        TechnicianEarning[]
+                                                                                                                      serviceRequests ServiceRequest[]
+                                                                                                                        reviews         Review[]
+                                                                                                                        
+                                                                                                                          @@map("technicians")
+                                                                                                                          }
+                                                                                                                          
+                                                                                                                          model Category {
+                                                                                                                            id          String   @id @default(cuid())
+                                                                                                                              name        String
+                                                                                                                                slug        String   @unique
+                                                                                                                                  description String?
+                                                                                                                                    imageUrl    String?
+                                                                                                                                      createdAt   DateTime @default(now())
+                                                                                                                                        updatedAt   DateTime @updatedAt
+                                                                                                                                        
+                                                                                                                                          products Product[]
+                                                                                                                                          
+                                                                                                                                            @@map("categories")
+                                                                                                                                            }
+                                                                                                                                            
+                                                                                                                                            model Product {
+                                                                                                                                              id             String   @id @default(cuid())
+                                                                                                                                                name           String
+                                                                                                                                                  slug           String   @unique
+                                                                                                                                                    description    String?
+                                                                                                                                                      price          Decimal
+                                                                                                                                                        technicianPrice Decimal?
+                                                                                                                                                          categoryId     String
+                                                                                                                                                            stockQuantity  Int      @default(0)
+                                                                                                                                                              imageUrls      String[]
+                                                                                                                                                                specifications Json?
+                                                                                                                                                                  featured       Boolean  @default(false)
+                                                                                                                                                                    createdAt      DateTime @default(now())
+                                                                                                                                                                      updatedAt      DateTime @updatedAt
+                                                                                                                                                                      
+                                                                                                                                                                        category      Category              @relation(fields: [categoryId], references: [id])
+                                                                                                                                                                          orderItems    OrderItem[]
+                                                                                                                                                                            technicianOrderItems TechnicianOrderItem[]
+                                                                                                                                                                              commissions   CommissionSetting[]
+                                                                                                                                                                              
+                                                                                                                                                                                @@map("products")
+                                                                                                                                                                                }
+                                                                                                                                                                                
+                                                                                                                                                                                model Order {
+                                                                                                                                                                                  id              String        @id @default(cuid())
+                                                                                                                                                                                    customerId      String
+                                                                                                                                                                                      totalAmount     Decimal
+                                                                                                                                                                                        status          OrderStatus   @default(PENDING)
+                                                                                                                                                                                          paymentMethod   PaymentMethod
+                                                                                                                                                                                            paymentStatus   PaymentStatus @default(PENDING)
+                                                                                                                                                                                              shippingAddress String
+                                                                                                                                                                                                createdAt       DateTime      @default(now())
+                                                                                                                                                                                                  updatedAt       DateTime      @updatedAt
+                                                                                                                                                                                                  
+                                                                                                                                                                                                    customer   Customer    @relation(fields: [customerId], references: [id])
+                                                                                                                                                                                                      orderItems OrderItem[]
+                                                                                                                                                                                                      
+                                                                                                                                                                                                        @@map("orders")
+                                                                                                                                                                                                        }
+                                                                                                                                                                                                        
+                                                                                                                                                                                                        model OrderItem {
+                                                                                                                                                                                                          id       String @id @default(cuid())
+                                                                                                                                                                                                            orderId  String
+                                                                                                                                                                                                              productId String
+                                                                                                                                                                                                                quantity Int
+                                                                                                                                                                                                                  price    Decimal
+                                                                                                                                                                                                                  
+                                                                                                                                                                                                                    order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+                                                                                                                                                                                                                      product Product @relation(fields: [productId], references: [id])
+                                                                                                                                                                                                                      
+                                                                                                                                                                                                                        @@map("order_items")
+                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                        
+                                                                                                                                                                                                                        model TechnicianOrder {
+                                                                                                                                                                                                                          id              String        @id @default(cuid())
+                                                                                                                                                                                                                            technicianId    String
+                                                                                                                                                                                                                              totalAmount     Decimal
+                                                                                                                                                                                                                                status          OrderStatus   @default(PENDING)
+                                                                                                                                                                                                                                  paymentMethod   PaymentMethod
+                                                                                                                                                                                                                                    paymentStatus   PaymentStatus @default(PENDING)
+                                                                                                                                                                                                                                      shippingAddress String
+                                                                                                                                                                                                                                        createdAt       DateTime      @default(now())
+                                                                                                                                                                                                                                          updatedAt       DateTime      @updatedAt
+                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                            technician    Technician         @relation(fields: [technicianId], references: [id])
+                                                                                                                                                                                                                                              orderItems TechnicianOrderItem[]
+                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                @@map("technician_orders")
+                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                model TechnicianOrderItem {
+                                                                                                                                                                                                                                                  id               String @id @default(cuid())
+                                                                                                                                                                                                                                                    technicianOrderId String
+                                                                                                                                                                                                                                                      productId        String
+                                                                                                                                                                                                                                                        quantity         Int
+                                                                                                                                                                                                                                                          price            Decimal
+                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                            technicianOrder TechnicianOrder @relation(fields: [technicianOrderId], references: [id], onDelete: Cascade)
+                                                                                                                                                                                                                                                              product         Product          @relation(fields: [productId], references: [id])
+                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                @@map("technician_order_items")
+                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                model ServiceRequest {
+                                                                                                                                                                                                                                                                  id             String               @id @default(cuid())
+                                                                                                                                                                                                                                                                    customerId     String
+                                                                                                                                                                                                                                                                      technicianId   String?
+                                                                                                                                                                                                                                                                        serviceType    String
+                                                                                                                                                                                                                                                                          description    String?
+                                                                                                                                                                                                                                                                            city           String
+                                                                                                                                                                                                                                                                              address        String
+                                                                                                                                                                                                                                                                                phone          String
+                                                                                                                                                                                                                                                                                  preferredDate  DateTime?
+                                                                                                                                                                                                                                                                                    preferredTime  DateTime?
+                                                                                                                                                                                                                                                                                      status         ServiceRequestStatus @default(PENDING)
+                                                                                                                                                                                                                                                                                        createdAt      DateTime             @default(now())
+                                                                                                                                                                                                                                                                                          updatedAt      DateTime             @updatedAt
+                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                            customer   Customer    @relation(fields: [customerId], references: [id])
+                                                                                                                                                                                                                                                                                              technician Technician? @relation(fields: [technicianId], references: [id])
+                                                                                                                                                                                                                                                                                                reviews    Review[]
+                                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                                  @@map("service_requests")
+                                                                                                                                                                                                                                                                                                  }
+                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                  model TechnicianEarning {
+                                                                                                                                                                                                                                                                                                    id               String  @id @default(cuid())
+                                                                                                                                                                                                                                                                                                      technicianId     String
+                                                                                                                                                                                                                                                                                                        orderId          String?
+                                                                                                                                                                                                                                                                                                          technicianOrderId String?
+                                                                                                                                                                                                                                                                                                            serviceRequestId String?
+                                                                                                                                                                                                                                                                                                              amount           Decimal
+                                                                                                                                                                                                                                                                                                                commissionType   String
+                                                                                                                                                                                                                                                                                                                  commissionValue  Decimal
+                                                                                                                                                                                                                                                                                                                    createdAt        DateTime @default(now())
+                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                      technician Technician @relation(fields: [technicianId], references: [id])
+                                                                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                                                        @@map("technician_earnings")
+                                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                                        model Review {
+                                                                                                                                                                                                                                                                                                                          id               String  @id @default(cuid())
+                                                                                                                                                                                                                                                                                                                            customerId       String
+                                                                                                                                                                                                                                                                                                                              technicianId     String
+                                                                                                                                                                                                                                                                                                                                serviceRequestId String
+                                                                                                                                                                                                                                                                                                                                  rating           Int
+                                                                                                                                                                                                                                                                                                                                    comment          String?
+                                                                                                                                                                                                                                                                                                                                      createdAt        DateTime @default(now())
+                                                                                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                                                                        customer       Customer       @relation(fields: [customerId], references: [id])
+                                                                                                                                                                                                                                                                                                                                          technician     Technician     @relation(fields: [technicianId], references: [id])
+                                                                                                                                                                                                                                                                                                                                            serviceRequest ServiceRequest @relation(fields: [serviceRequestId], references: [id])
+                                                                                                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                                                                                              @@map("reviews")
+                                                                                                                                                                                                                                                                                                                                              }
+                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                              model CommissionSetting {
+                                                                                                                                                                                                                                                                                                                                                id             String @id @default(cuid())
+                                                                                                                                                                                                                                                                                                                                                  productId      String
+                                                                                                                                                                                                                                                                                                                                                    commissionType String
+                                                                                                                                                                                                                                                                                                                                                      commissionValue Decimal
+                                                                                                                                                                                                                                                                                                                                                        createdAt      DateTime @default(now())
+                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                                                                          product Product @relation(fields: [productId], references: [id])
+                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                                                            @@map("commission_settings")
+                                                                                                                                                                                                                                                                                                                                                            }

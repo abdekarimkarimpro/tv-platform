@@ -1,10 +1,11 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { prisma } from "@/lib/prisma"; // استيراد مسمى صحيح
+import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-export const authOptions: NextAuthOptions = {
+// تم إزالة كلمة 'export' ليتوقف عن التسبب في الخطأ
+const authOptions: NextAuthOptions = { 
   adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
@@ -55,7 +56,6 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token) {
-        // تأكد من وجود session.user قبل التعديل
         if (session.user) {
           session.user.id = token.sub!;
           session.user.role = token.role as string;
@@ -68,4 +68,5 @@ export const authOptions: NextAuthOptions = {
 
 const handler = NextAuth(authOptions);
 
+// يجب تصدير GET و POST فقط
 export { handler as GET, handler as POST };
